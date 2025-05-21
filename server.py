@@ -4,7 +4,7 @@ from fastmcp import FastMCP, Context
 from mcp.server.fastmcp.prompts import base
 from contextlib import asynccontextmanager
 import os
-from typing import Optional, List
+from typing import Dict, Optional, List
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -16,10 +16,11 @@ mcp = FastMCP("Agent discovery")
 
 agent_store = {}
 
+
 class AgentCard(BaseModel):
     name: str
     agent_card_url: str
-   
+
 
 @mcp.tool()
 def publish_card(ctx: Context = None, name: str = None, agent_card_url: str = None):
@@ -34,11 +35,12 @@ def publish_card(ctx: Context = None, name: str = None, agent_card_url: str = No
         if name in agent_store:
             ctx.error(f"Agent {name} already exists")
             return "Registration failed"
-        
-        agent_store[name] = AgentCard(
-            name=name,
-            agent_card_url=agent_card_url
-        )
+
+        # TODO: This makes the name be duplicated, since we have some_name: {name: some_name, url: some_url } entries in the agent_store then.
+        # agent_store[name] = AgentCard(name=name, agent_card_url=agent_card_url)
+
+        # FIXME (Not urgent): This one breaks the resource getters that expect values to be of type AgentCard
+        agent_store[name] = agent_card_url
         return f"agent://{name}"
 
     except Exception as e:
@@ -46,21 +48,26 @@ def publish_card(ctx: Context = None, name: str = None, agent_card_url: str = No
         if ctx:
             ctx.error(error_msg)
         return error_msg
+
+
 @mcp.tool()
-def list_cards(ctx: Context = None) -> List[str]:
+def list_cards(ctx: Context = None) -> Dict[str, str]:
     """
     List all agent cards.
 
     Returns:
-        List[str]: A list of agent card URLs.
+        Dict[str, str]: A dictionary where keys are the names of available agents, and associated values are the urls where the agents are running.
     """
     try:
-        return [f"agent://{name}" for name in agent_store.keys()]
+        # return [f"agent://{name}" for name in agent_store.keys()]
+        return agent_store
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
         if ctx:
             ctx.error(error_msg)
         return error_msg
+
+
 @mcp.tool()
 def get_agent(name: str = None) -> List[str]:
     """
@@ -81,43 +88,26 @@ def get_agent(name: str = None) -> List[str]:
             ctx.error(error_msg)
         return error_msg
 
-@mcp.resource("agent://{name}")
-def get_agent_card(name: str) -> AgentCard:
-    """Dynamic resource for individual agent cards"""
-    if name in agent_store:
-        return agent_store[name]
-    else:
-        error_msg = f"Agent {name} not found"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
 
-@mcp.resource("agents://")
-def list_agents() -> List[str]:
-    """Collection resource listing all agent URIs"""
-    return [f"agent://{agent.name}" for agent in agent_store.values()]
+# TODO: These resources should be used in the future for read-only get requests for data.
+
+# @mcp.resource("agent://{name}")
+# def get_agent_card(name: str) -> AgentCard:
+#     """Dynamic resource for individual agent cards"""
+#     if name in agent_store:
+#         return agent_store[name]
+#     else:
+#         error_msg = f"Agent {name} not found"
+#         if ctx:
+#             ctx.error(error_msg)
+#         return error_msg
 
 
+# @mcp.resource("agents://")
+# def list_agents() -> List[str]:
+#     """Collection resource listing all agent URIs"""
+#     return [f"agent://{agent.name}" for agent in agent_store.values()]
 
 
-# # Create FastAPI app and mount the SSE MCP server
-# app = FastAPI(
-#     title="TNT MCP Server", 
-#     description="FastAPI application with MCP SSE server for action logging",
-#     docs_url="/docs",
-#     redoc_url="/redoc",
-#     openapi_url="/openapi.json",
-
-# )
-
-# Initialize MCP with FastAPI
-# mcp.init_app(app)
-
-# Mount with Streamable HTTP transport
-# app.mount("/mcp", mcp.http_app())
 if __name__ == "__main__":
-    mcp.run(
-        transport="streamable-http",
-        host="127.0.0.1",
-        port=6969
-    )
+    mcp.run(transport="streamable-http", host="127.0.0.1", port=6969)
