@@ -91,16 +91,18 @@ def get_agent(name: str = None) -> List[str]:
 
 # TODO: These resources should be used in the future for read-only get requests for data.
 
-# @mcp.resource("agent://{name}")
+
+@mcp.resource("agent://{name}")
 # def get_agent_card(name: str) -> AgentCard:
-#     """Dynamic resource for individual agent cards"""
-#     if name in agent_store:
-#         return agent_store[name]
-#     else:
-#         error_msg = f"Agent {name} not found"
-#         if ctx:
-#             ctx.error(error_msg)
-#         return error_msg
+def get_agent_url(name: str) -> str:
+    """Dynamic resource for individual agent cards"""
+    if name in agent_store:
+        return agent_store[name]
+    else:
+        error_msg = f"Agent {name} not found"
+        if ctx:
+            ctx.error(error_msg)
+        return error_msg
 
 
 # @mcp.resource("agents://")
