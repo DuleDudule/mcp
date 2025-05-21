@@ -69,9 +69,9 @@ def list_cards(ctx: Context = None) -> Dict[str, str]:
 
 
 @mcp.tool()
-def get_agent(name: str = None) -> List[str]:
+def get_agent(name: str = None) -> str:
     """
-    Returns an agent card based its name.
+    Returns an agent card url based on agent's name.
 
     Args:
         ctx (Context): The context of the MCP server.
@@ -80,7 +80,7 @@ def get_agent(name: str = None) -> List[str]:
         List[str]: A list of agent card URLs.
     """
     try:
-        return get_agent_card(name)
+        return get_agent_url(name)
 
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
