@@ -18,9 +18,6 @@ mcp = FastMCP(
 agent_store = {}
 
 
-class AgentCard(BaseModel):
-    url: str
-    description: str
 
 
 @mcp.tool()
@@ -36,19 +33,15 @@ def publish_card(
     if name in agent_store:
         raise ToolError("Agent with the same name already registered")
 
-    agent_store[name] = AgentCard(url=url, description=description)
+    agent_store[name] = {"url": url, "description": description}
 
     return f"Agent succesfully registered: {name} at {url} with description: {description}"
 
 
 @mcp.tool()
-def list_cards() -> Dict[str, AgentCard]:
+def list_cards() -> Dict[str, Dict[str, str]]:
     """
     List all agent cards.
-
-    Returns:
-        Dict[str, AgentCard]: A dictionary where keys are the names of available agents, and associated values are the 
-        agent cards with the url and description.
     """
     return agent_store
 
@@ -66,7 +59,7 @@ def get_agent(name: Annotated[str, Field(description="Agent name")]) -> Dict[str
 
 @mcp.resource("agent://{name}")
 # def get_agent_card(name: str) -> AgentCard:
-def get_agent_url(name: str) -> str:
+def get_agent_url(name: str,ctx: Context = None) -> str:
     """Dynamic resource for individual agent cards"""
     if name in agent_store:
         return agent_store[name]
