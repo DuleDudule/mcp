@@ -1,92 +1,64 @@
-from datetime import datetime
-from fastapi import FastAPI
+
 from fastmcp import FastMCP, Context
-from mcp.server.fastmcp.prompts import base
-from contextlib import asynccontextmanager
-import os
 from typing import Dict, Optional, List
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from typing import Annotated
+from pydantic import Field
+from fastmcp.exceptions import ToolError
 
 # Load environment variables
 load_dotenv()
 
 # Create the MCP server instance
-mcp = FastMCP("Agent discovery")
-
+mcp = FastMCP(
+    name="Agent discovery",
+    instructions="This server lets agents register their agent cards and discover other registered agents."
+)
 agent_store = {}
 
 
 class AgentCard(BaseModel):
-    name: str
-    agent_card_url: str
+    url: str
+    description: str
 
 
 @mcp.tool()
-def publish_card(ctx: Context = None, name: str = None, agent_card_url: str = None):
+def publish_card(
+        name: Annotated[str, Field(description="Agent name")],
+        url: Annotated[str, Field(description="Agent url")],
+        description: Annotated[str, Field(description="Description of the agents capabilities")]
+) -> str:
     """
     Publish an agent card to the MCP server.
-
-    Args:
-        name (str): The name of the agent.
-        agent_card_url (str): The URL of the agent card.
     """
-    try:
-        if name in agent_store:
-            ctx.error(f"Agent {name} already exists")
-            return "Registration failed"
+    
+    if name in agent_store:
+        raise ToolError("Agent with the same name already registered")
 
-        # TODO: This makes the name be duplicated, since we have some_name: {name: some_name, url: some_url } entries in the agent_store then.
-        # agent_store[name] = AgentCard(name=name, agent_card_url=agent_card_url)
+    agent_store[name] = AgentCard(url=url, description=description)
 
-        # FIXME (Not urgent): This one breaks the resource getters that expect values to be of type AgentCard
-        agent_store[name] = agent_card_url
-        return f"agent://{name}"
-
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
+    return f"Agent succesfully registered: {name} at {url} with description: {description}"
 
 
 @mcp.tool()
-def list_cards(ctx: Context = None) -> Dict[str, str]:
+def list_cards() -> Dict[str, AgentCard]:
     """
     List all agent cards.
 
     Returns:
-        Dict[str, str]: A dictionary where keys are the names of available agents, and associated values are the urls where the agents are running.
+        Dict[str, AgentCard]: A dictionary where keys are the names of available agents, and associated values are the 
+        agent cards with the url and description.
     """
-    try:
-        # return [f"agent://{name}" for name in agent_store.keys()]
-        return agent_store
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
+    return agent_store
 
 
 @mcp.tool()
-def get_agent(name: str = None) -> str:
+def get_agent(name: Annotated[str, Field(description="Agent name")]) -> Dict[str,str]:
     """
-    Returns an agent card url based on agent's name.
-
-    Args:
-        ctx (Context): The context of the MCP server.
-
-    Returns:
-        List[str]: A list of agent card URLs.
+    Returns an agent card url and description based on agent's name.
     """
-    try:
-        return get_agent_url(name)
-
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
+    return agent_store[name] if name in agent_store else {}
 
 
 # TODO: These resources should be used in the future for read-only get requests for data.
