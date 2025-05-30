@@ -23,8 +23,7 @@ agent_store = {}
 @mcp.tool()
 def publish_card(
         name: Annotated[str, Field(description="Agent name")],
-        url: Annotated[str, Field(description="Agent url")],
-        description: Annotated[str, Field(description="Description of the agents capabilities")]
+        card: Annotated[str, Field(description="Json agent card")],
 ) -> str:
     """
     Publish an agent card to the MCP server.
@@ -33,9 +32,9 @@ def publish_card(
     if name in agent_store:
         raise ToolError("Agent with the same name already registered")
 
-    agent_store[name] = {"url": url, "description": description}
+    agent_store[name] = {"card": card}
 
-    return f"Agent succesfully registered: {name} at {url} with description: {description}"
+    return f"Agent succesfully registered: {name}"
 
 
 @mcp.tool()
@@ -49,7 +48,7 @@ def list_cards() -> Dict[str, Dict[str, str]]:
 @mcp.tool()
 def get_agent(name: Annotated[str, Field(description="Agent name")]) -> Dict[str,str]:
     """
-    Returns an agent card url and description based on agent's name.
+    Returns an agent card based on agent's name.
     """
     return agent_store[name] if name in agent_store else {}
 
