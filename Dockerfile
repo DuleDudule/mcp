@@ -26,5 +26,5 @@ EXPOSE 6969
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Command to run the server with host override
-CMD ["python", "-c", "import server; server.mcp.run(transport='streamable-http', host='0.0.0.0', port=6969)"]
+# Command to run the server
+CMD ["uv", "run", "server.py"]

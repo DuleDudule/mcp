@@ -76,4 +76,4 @@ def get_agent_url(name: str,ctx: Context = None) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="127.0.0.1", port=6969)
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=6969)
